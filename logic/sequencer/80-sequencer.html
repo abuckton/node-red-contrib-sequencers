@@ -1,0 +1,155 @@
+<!--
+  Copyright 2013 IBM Corp.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<script type="text/x-red" data-template-name="Sequencer">
+    <div class="form-row">
+        <label for="node-input-name" style="float: left; width:160px"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" style="width: 200px;" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <span style="float: left; width:160px; ">Trigger msg </span><input type="text" id="node-input-trigger" style="width: 200px;" placeholder="payload"/>
+    </div>
+    <div class="form-row node-input-event-container-row" style="margin-bottom: 0px;">
+    <span> Events </span>
+        <div id="node-input-event-container-div" style="box-sizing: border-box; border-radius: 5px; height: 270px; padding: 5px; border: 1px solid #ccc; overflow-y:scroll;">
+            <ol id="node-input-event-container" style=" list-style-type:none; margin: 0; font-size: 80%"></ol>
+        </div>
+    </div>
+    <div class="form-row">
+        <a href="#" class="btn btn-mini" id="node-input-add-event" style="margin-top: 4px;"><i class="fa fa-plus"></i> Event</a>
+    </div>
+    <div class="form-row">
+        <span style="float: left; width:160px; ">Expiry </span><input type="text" id="node-input-expiry" style="width: 200px;"/>
+    </div>
+    <div class="form-row">
+        <span style="float: left; width:160px; ">Timed-out msg</span><input type="text" id="node-input-expired_event" style="width: 200px;" placeholder="payload"/>
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="Sequencer">
+    <p>A function node to emit a series of messages for each input message.</p>
+    <p>When the matching message arrives, the node sends the next message in the array of defined output messages.</p>
+    <p>A timeout can be set such that when the first message is sent
+     a delay (in ms) between each message.</p>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('Sequencer', {
+        color: "#E2D96E",
+        category: 'function',
+        defaults: {
+            name: {value:""},
+            trigger: {value:""},
+            events: {value:[{ mesg:""}]},
+            expiry: {value: 0 },
+            expired_event: { value:""}
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "switch.png",
+        label: function() {
+            return this.name||"Sequencer";
+        },
+
+        oneditprepare: function() {
+
+            function generateEvent(i,_event) {
+                var container = $('<li/>',{style:"margin:0; padding:6px 0px; border-bottom: 1px solid #ccc;"});
+                var row = $('<div/>').appendTo(container);
+                var rowPadding = $('<div/>',{style:"padding-top: 3px; text-align: right;"}).appendTo(container);
+
+                var indexField = $('<span/>',{style:"margin-right: 5px; font-weight: bold;"}).appendTo(row);
+                indexField.append("#");
+                indexField.append(i);
+
+                var mesgField = $('<span/>', {style:"margin-left: 10px;"}).appendTo(row);
+                mesgField.append(" message:");
+                var mesgValueField = $('<input/>',{class:"node-input-mesg-value",type:"text",style:"margin-left: 2px; width: 150px;", placeholder:"payload"}).appendTo(mesgField);
+
+                var finalspan = $('<span/>',{style:"float: right; margin-top: 3px; margin-right: 5px;"}).appendTo(row);
+                var deleteButton = $('<a/>',{href:"#",class:"btn btn-mini", style:"margin-left: 5px;"}).appendTo(finalspan);
+                $('<i/>',{class:"fa fa-remove"}).appendTo(deleteButton);
+
+                deleteButton.click(function() {
+                    container.css({"background":"#fee"});
+                    container.fadeOut(300, function() {
+                        $(this).remove();
+                        $("#node-input-event-container").children().each(function(i) {
+                            $(this).find(".node-input-event-index").html(i+1);
+                        });
+
+                    });
+                });
+
+                $("#node-input-event-container").append(container);
+
+                mesgValueField.val(_event.mesg);
+            }
+
+            // handle "add event" button clicks
+            $("#node-input-add-event").click(function() {
+                generateEvent($("#node-input-event-container").children().length+1,{mesg:""});
+                $("#node-input-event-container-div").scrollTop($("#node-input-event-container-div").get(0).scrollHeight);
+            });
+
+            // Display the existing events
+            for (var i=0;i<this.events.length;i++) {
+                var _event = this.events[i];
+                generateEvent(i+1,_event);
+            }
+
+            function switchDialogResize() {
+                var rows = $("#dialog-form>div:not(.node-input-event-container-row)");
+                var height = $("#dialog-form").height();
+                for (var i=0;i<rows.size();i++) {
+                    height -= $(rows[i]).outerHeight(true);
+                }
+                var editorRow = $("#dialog-form>div.node-input-event-container-row");
+                height -= (parseInt(editorRow.css("marginTop"))+parseInt(editorRow.css("marginBottom")));
+                $("#node-input-event-container-div").css("height",height+"px");
+            };
+
+            $( "#dialog" ).on("dialogresize", switchDialogResize);
+
+            $( "#dialog" ).one("dialogopen", function(ev) {
+                var size = $( "#dialog" ).dialog('option','sizeCache-switch');
+                if (size) {
+                    $("#dialog").dialog('option','width',size.width);
+                    $("#dialog").dialog('option','height',size.height);
+                    switchDialogResize();
+                }
+            });
+
+            $( "#dialog" ).one("dialogclose", function(ev,ui) {
+                $( "#dialog" ).off("dialogresize",switchDialogResize);
+            });
+
+        },
+
+        oneditsave: function() {
+            var events = $("#node-input-event-container").children();
+            var node = this;
+            node.events= [];
+            events.each(function(i) {
+                var eventData = $(this);
+                var message = eventData.find(".node-input-mesg-value").val();
+                var _event = { mesg:message};
+                node.events.push(_event);
+            });
+
+        }
+    });
+</script>

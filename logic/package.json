@@ -1,0 +1,26 @@
+{
+  "name": "node-red-contrib-sequence",
+  "version": "0.9.0",
+  "description": "A collection of Node Red functions to transform/change the msg.payload value for a sequence of events.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abuckton/node-red-contrib-sequencers.git"
+  },
+  "keywords": [
+    "node-red",
+    "sequencer",
+    "toggle",
+    "sequence-emitter",
+    "automation"
+  ],
+  "author": "A.Buckton",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/abuckton/node-red-contrib-sequencers/issues"
+  },
+  "homepage": "https://github.com/abuckton/node-red-contrib-sequencers#readme"
+}
